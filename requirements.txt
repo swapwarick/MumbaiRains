@@ -1,0 +1,18 @@
+# Hydrology & GIS Data Processing
+numpy
+pandas
+geopandas
+shapely
+rasterio
+scipy
+matplotlib
+
+# Backend API
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+
+# Testing
+pytest
+httpx
