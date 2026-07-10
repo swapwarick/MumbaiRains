@@ -45,7 +45,8 @@ class SimulationService:
             gpkg_path=str(settings.gpkg_path),
             duration_hours=duration_hours,
             intensity_mm_hr=intensity_mm_hr,
-            timestep_min=float(time_step_min)
+            timestep_min=float(time_step_min),
+            rainfall_mode=rainfall_mode,
         )
         
         depth_history = self.controller.run_all()

@@ -59,7 +59,8 @@ class SimulationController:
         gpkg_path: str,
         duration_hours: Optional[float] = None,
         intensity_mm_hr: Optional[float] = None,
-        timestep_min: Optional[float] = None
+        timestep_min: Optional[float] = None,
+        rainfall_mode: Optional[str] = None,
     ) -> None:
         """
         Sets up the grid, starts the clock, and wires up all sub-engines.
@@ -83,17 +84,22 @@ class SimulationController:
         # 3. Infiltration & Roughness Engines
         self.landcover = LandCoverEngine()
         
-        # Infiltration selects model based on scenario configuration (standard: curve_number)
-        self.infiltration = InfiltrationEngine(rows, cols, model_name="curve_number")
+        # Infiltration: constant model is appropriate here — SCS Curve Number operates on
+        # cumulative storm rainfall, not per-timestep rates, and would absorb ~98% of rain
+        # per step (leaving zero surface water). Constant rate of 8.33e-7 m/s (~3 mm/hr)
+        # represents dense urban impervious surfaces (Mumbai catchment CN~90).
+        self.infiltration = InfiltrationEngine(rows, cols, model_name="constant")
         
         # 4. Meteorology, Tide & Routing
+        # rainfall_mode: explicit API override > scenario default
+        rain_mode = rainfall_mode if rainfall_mode is not None else self.scenario.rainfall_mode
         self.meteorology = SyntheticMeteorologyEngine(
             rows=rows,
             cols=cols,
             duration_hours=dur,
             intensity_mm_hr=inten,
             dt_minutes=dt_min,
-            mode=self.scenario.rainfall_mode
+            mode=rain_mode
         )
         self.tide = TideEngine(
             mean_sea_level_m=self.scenario.msl,
@@ -157,8 +163,9 @@ class SimulationController:
 
         # E. Drainage and River flow (HydraulicNetworkEngine)
         # Apply storm drainage intake
-        # 1e-5 m/s corresponds to approximately 36 mm/hr of inlet capacity
-        drain_cap_grid = np.full(self.state.water_depth_grid.shape, 1e-5, dtype=np.float32)
+        # 2.78e-7 m/s ≈ 1 mm/hr inlet capacity — partially blocked urban drain
+        # (was 1e-5 = 36 mm/hr which swallowed all runoff and produced zero surface flooding)
+        drain_cap_grid = np.full(self.state.water_depth_grid.shape, 2.78e-7, dtype=np.float32)
         self.state.water_depth_grid, actual_intake = self.hydraulics.apply_drainage_intake(
             water_depth_m=self.state.water_depth_grid,
             drain_capacity_m_s=drain_cap_grid,
@@ -196,6 +203,24 @@ class SimulationController:
             dt_seconds=dt
         )
         self.state.flood_flag_grid = flooded_mask
+
+        # H. Per-step diagnostic log (Task 3 & Task 11)
+        rain_vol_m3   = float((rain_rate_grid * dt).sum())
+        intake_vol_m3 = float(actual_intake.sum())
+        surface_vol   = float(self.state.water_depth_grid.sum())
+        max_depth     = float(self.state.water_depth_grid.max())
+        logger.info(
+            "-------- Timestep --------",
+            extra={
+                "step": self.state.current_timestep,
+                "rain_added_m3": round(rain_vol_m3, 4),
+                "drain_intake_m3": round(intake_vol_m3, 4),
+                "surface_vol_m3": round(surface_vol, 4),
+                "max_depth_m": round(max_depth, 4),
+                "mean_depth_m": round(float(self.state.water_depth_grid.mean()), 6),
+                "flooded_cells": int(flooded_mask.sum()),
+            }
+        )
 
         return self.state.to_dict()
 
