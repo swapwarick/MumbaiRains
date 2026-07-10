@@ -10,7 +10,9 @@ References:
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from enum import Enum
+from dataclasses import dataclass
+from typing import Dict, Any, Tuple, List, Optional
 import numpy as np
 
 from backend.utils import get_logger
@@ -182,3 +184,170 @@ class FlowRoutingEngine:
             )
             
         return new_depth, vx, vy
+
+
+class BoundaryType(Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+    OUTFLOW = "outflow"
+    FIXED_LEVEL = "fixed_level"
+    SEA = "sea"
+    REFLECTIVE = "reflective"
+
+
+@dataclass
+class MassBalanceReport:
+    timestep: int
+    initial_water: float      # m^3
+    boundary_inflow: float    # m^3
+    boundary_outflow: float   # m^3
+    current_storage: float     # m^3
+    absolute_error: float     # m^3
+    relative_error: float     # fraction
+
+
+class SurfaceRoutingEngine:
+    """
+    Spatially vectorized 2D D8 routing engine based on neighbour lookup tables.
+    Simulates horizontal water movement without nested loops.
+    """
+    def __init__(
+        self,
+        dx_m: float,
+        downstream_cells: np.ndarray,
+        transfer_fraction: float = 0.25,
+        boundary_type: BoundaryType = BoundaryType.CLOSED,
+    ) -> None:
+        """
+        Args:
+            dx_m: Isotropic grid cell size in meters.
+            downstream_cells: 3D int32 array of shape (rows, cols, 2) where
+                              [r, c, 0] = target row and [r, c, 1] = target col.
+            transfer_fraction: Fraction of cell water transferred downstream each timestep.
+            boundary_type: BoundaryType enum value (supports OPEN and CLOSED in Sprint 3).
+        """
+        self.dx = float(dx_m)
+        self.downstream_cells = downstream_cells.astype(np.int32)
+        self.transfer_fraction = float(transfer_fraction)
+        self.boundary_type = boundary_type
+        
+        self.rows, self.cols = downstream_cells.shape[:2]
+        
+        # Verify initial parameters
+        self._verify_parameters()
+        
+        # Precompute coordinate meshes
+        self.r_coords, self.c_coords = np.meshgrid(np.arange(self.rows), np.arange(self.cols), indexing="ij")
+        
+        # History list for tracking mass balance every timestep
+        self.mass_balance_history: List[MassBalanceReport] = []
+        
+        # Diagnostics/Extension point for future adaptive timestep controller
+        self.adaptive_timestep_controller: Optional[Any] = None
+
+    def _verify_parameters(self) -> None:
+        if self.dx <= 0:
+            raise ValueError("Grid cell size dx_m must be strictly positive.")
+        if not (0.0 <= self.transfer_fraction <= 1.0):
+            raise ValueError("Transfer fraction must be in range [0.0, 1.0].")
+        if self.downstream_cells.shape != (self.rows, self.cols, 2):
+            raise ValueError("downstream_cells must have shape (rows, cols, 2).")
+
+    def route(self, state: "SimulationState", dt: float) -> "SimulationState":
+        """
+        Execute a single fixed timestep routing of duration dt.
+        
+        Args:
+            state: The current SimulationState.
+            dt: Fixed timestep duration (seconds).
+            
+        Returns:
+            updated_state: The updated SimulationState.
+        """
+        from simulation.core.state import SimulationState
+        
+        if dt <= 0:
+            return state
+            
+        water = state.water_depth_grid.copy().astype(np.float32)
+        cell_area = self.dx * self.dx
+        initial_water_vol = float(water.sum() * cell_area)
+        
+        # D8 lookup coordinates
+        downstream_r = self.downstream_cells[:, :, 0]
+        downstream_c = self.downstream_cells[:, :, 1]
+        
+        # Identify flow states
+        is_sink = (downstream_r == self.r_coords) & (downstream_c == self.c_coords)
+        out_of_bounds = (downstream_r < 0) | (downstream_r >= self.rows) | (downstream_c < 0) | (downstream_c >= self.cols)
+        
+        # Available potential outflow
+        potential_outflow = water * self.transfer_fraction
+        
+        # Apply boundary conditions
+        if self.boundary_type == BoundaryType.CLOSED:
+            # Water cannot cross the boundary; boundary flow is blocked (acts as sink)
+            valid_flow = ~is_sink & ~out_of_bounds
+            outflow = np.where(valid_flow, potential_outflow, 0.0)
+            boundary_outflow_vol = 0.0
+            
+        elif self.boundary_type == BoundaryType.OPEN:
+            # Water crosses the boundary and leaves the grid
+            valid_flow = ~is_sink & ~out_of_bounds
+            boundary_flow = ~is_sink & out_of_bounds
+            outflow = np.where(valid_flow | boundary_flow, potential_outflow, 0.0)
+            boundary_outflow_vol = float(potential_outflow[boundary_flow].sum() * cell_area)
+            
+        elif self.boundary_type in (BoundaryType.OUTFLOW, BoundaryType.FIXED_LEVEL, BoundaryType.SEA, BoundaryType.REFLECTIVE):
+            raise NotImplementedError(
+                f"Boundary type {self.boundary_type.name} is defined but not implemented in Sprint 3."
+            )
+        else:
+            raise ValueError(f"Unknown boundary type: {self.boundary_type}")
+            
+        # Accumulate inflows at valid target cells
+        inflow = np.zeros_like(water)
+        if np.any(valid_flow):
+            np.add.at(
+                inflow,
+                (downstream_r[valid_flow], downstream_c[valid_flow]),
+                potential_outflow[valid_flow]
+            )
+            
+        # Compute new depths
+        new_water = water - outflow + inflow
+        
+        # Numerical audits (Verify no negative depths, NaNs, or Infs)
+        if np.any(np.isnan(new_water)):
+            raise ValueError("Numerical error: Water depth grid contains NaN values after routing.")
+        if np.any(np.isinf(new_water)):
+            raise ValueError("Numerical error: Water depth grid contains Infinite values after routing.")
+            
+        # Protect against tiny negative floating point offsets
+        new_water = np.maximum(new_water, 0.0).astype(np.float32)
+        
+        # Mass balance reporting
+        current_storage_vol = float(new_water.sum() * cell_area)
+        boundary_inflow_vol = 0.0
+        
+        absolute_error = current_storage_vol - (initial_water_vol + boundary_inflow_vol - boundary_outflow_vol)
+        
+        denom = initial_water_vol + boundary_inflow_vol
+        relative_error = absolute_error / denom if denom > 0.0 else 0.0
+        
+        report = MassBalanceReport(
+            timestep=state.current_timestep,
+            initial_water=initial_water_vol,
+            boundary_inflow=boundary_inflow_vol,
+            boundary_outflow=boundary_outflow_vol,
+            current_storage=current_storage_vol,
+            absolute_error=absolute_error,
+            relative_error=relative_error
+        )
+        self.mass_balance_history.append(report)
+        
+        # Update simulation state
+        state.water_depth_grid = new_water
+        state.current_timestep += 1
+        
+        return state

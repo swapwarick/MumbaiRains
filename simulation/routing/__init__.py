@@ -9,11 +9,19 @@ from .engine import (
     DiffusionWaveSolver,
     ShallowWaterEquationsSolver,
     FlowRoutingEngine,
+    BoundaryType,
+    MassBalanceReport,
+    SurfaceRoutingEngine,
 )
+from .benchmarks import create_routing_benchmark
 
 __all__ = [
     "FlowRoutingSolver",
     "DiffusionWaveSolver",
     "ShallowWaterEquationsSolver",
     "FlowRoutingEngine",
+    "BoundaryType",
+    "MassBalanceReport",
+    "SurfaceRoutingEngine",
+    "create_routing_benchmark",
 ]
