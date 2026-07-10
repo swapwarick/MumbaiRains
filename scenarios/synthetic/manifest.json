@@ -1,0 +1,5 @@
+{
+  "name": "synthetic",
+  "description": "Standard synthetic rainstorm profile with uniform constant rainfall.",
+  "rainfall_mode": "constant"
+}

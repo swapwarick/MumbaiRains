@@ -42,6 +42,44 @@ class Scenario:
         self.description = description
 
 
+class HistoricalRainfallScenario(Scenario):
+    """
+    Scenario that loads custom observed/historical rainfall records from a file (Task 4).
+    """
+    def __init__(
+        self,
+        name: str,
+        rainfall_time_series: list[float],
+        rainfall_depth_series: list[float],
+        mean_sea_level_m: float = 0.0,
+        tidal_range_m: float = 4.5,
+        storm_surge_m: float = 0.0,
+        drainage_clogging_factor: float = 0.0,
+        description: str = ""
+    ) -> None:
+        self.rainfall_time_series = rainfall_time_series
+        self.rainfall_depth_series = rainfall_depth_series
+        
+        # Determine duration from time series
+        duration_hours = max(rainfall_time_series) / 60.0 if rainfall_time_series else 1.0
+        # Determine average intensity
+        total_rain = sum(rainfall_depth_series)
+        avg_intensity = total_rain / duration_hours if duration_hours > 0 else 0.0
+
+        super().__init__(
+            name=name,
+            rainfall_intensity_mm_hr=avg_intensity,
+            rainfall_duration_hours=duration_hours,
+            rainfall_mode="historical",
+            mean_sea_level_m=mean_sea_level_m,
+            tidal_range_m=tidal_range_m,
+            storm_surge_m=storm_surge_m,
+            drainage_clogging_factor=drainage_clogging_factor,
+            description=description
+        )
+
+
+
 class ScenarioManager:
     """
     Manages and configures predefined simulation scenarios.

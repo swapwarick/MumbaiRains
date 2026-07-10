@@ -1,0 +1,5 @@
+{
+  "name": "blocked_drain",
+  "description": "Heavy drainage network clogging scenario.",
+  "rainfall_mode": "constant"
+}

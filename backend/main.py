@@ -43,6 +43,50 @@ def create_app() -> FastAPI:
     )
 
     # ------------------------------------------------------------------ #
+    # Startup Configuration Validation (Task 8)
+    # ------------------------------------------------------------------ #
+    @app.on_event("startup")
+    def validate_configuration_on_startup() -> None:
+        logger.info("Running startup configuration validations...")
+        
+        # 1. Validate DEM file
+        dem_path = str(settings.dem_path)
+        if not os.path.exists(dem_path):
+            raise RuntimeError(f"Startup validation failed: Copernicus DEM file is missing at {dem_path}")
+        if os.path.getsize(dem_path) < 1024:
+            raise RuntimeError(f"Startup validation failed: Copernicus DEM file at {dem_path} is invalid/empty.")
+            
+        # 2. Validate OSM GeoPackage file
+        gpkg_path = str(settings.gpkg_path)
+        if not os.path.exists(gpkg_path):
+            raise RuntimeError(f"Startup validation failed: OSM GeoPackage is missing at {gpkg_path}")
+            
+        # 3. Validate Cache directory
+        cache_dir = os.path.join(str(settings.project_root), "data", "cache", "terrain")
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+        except Exception as exc:
+            raise RuntimeError(f"Startup validation failed: Cache directory at {cache_dir} is not creatable: {exc}")
+            
+        # 4. Validate Output directory is writable
+        output_dir = str(settings.output_dir)
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            test_file = os.path.join(output_dir, ".write_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+        except Exception as exc:
+            raise RuntimeError(f"Startup validation failed: Output directory at {output_dir} is not writable: {exc}")
+
+        # 5. Validate Scenarios directory exists
+        scenarios_dir = os.path.join(str(settings.project_root), "scenarios")
+        if not os.path.exists(scenarios_dir) or not os.listdir(scenarios_dir):
+            raise RuntimeError(f"Startup validation failed: Scenarios directory at {scenarios_dir} is missing or empty.")
+
+        logger.info("All startup configuration validations passed successfully.")
+
+    # ------------------------------------------------------------------ #
     # Middleware
     # ------------------------------------------------------------------ #
     app.add_middleware(

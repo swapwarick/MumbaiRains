@@ -43,6 +43,61 @@ class GridManager:
     ) -> None:
         """
         Loads the DEM raster and constructs the Cell grid.
+        """
+        # 1. Load DEM
+        self.elevation, self.meta = load_dem(dem_path)
+        self.rows, self.cols = self.elevation.shape
+        self.transform = self.meta["transform"]
+
+        self._build_cells(
+            land_cover_types,
+            roughness_coefficients,
+            building_masks,
+            road_masks,
+            river_masks,
+            soil_types
+        )
+
+    def initialize_grid_from_data(
+        self,
+        elevation: np.ndarray,
+        meta: Dict[str, Any],
+        land_cover_types: Optional[np.ndarray] = None,
+        roughness_coefficients: Optional[np.ndarray] = None,
+        building_masks: Optional[np.ndarray] = None,
+        road_masks: Optional[np.ndarray] = None,
+        river_masks: Optional[np.ndarray] = None,
+        soil_types: Optional[np.ndarray] = None
+    ) -> None:
+        """
+        Constructs the Cell grid using pre-loaded elevation and metadata (Task 1).
+        """
+        self.elevation = elevation
+        self.meta = meta
+        self.rows, self.cols = self.elevation.shape
+        self.transform = self.meta["transform"]
+
+        self._build_cells(
+            land_cover_types,
+            roughness_coefficients,
+            building_masks,
+            road_masks,
+            river_masks,
+            soil_types
+        )
+
+    def _build_cells(
+        self,
+        land_cover_types: Optional[np.ndarray] = None,
+        roughness_coefficients: Optional[np.ndarray] = None,
+        building_masks: Optional[np.ndarray] = None,
+        road_masks: Optional[np.ndarray] = None,
+        river_masks: Optional[np.ndarray] = None,
+        soil_types: Optional[np.ndarray] = None
+    ) -> None:
+
+        """
+        Loads the DEM raster and constructs the Cell grid.
 
         Args:
             dem_path: Path to the GeoTIFF DEM file.
@@ -53,11 +108,6 @@ class GridManager:
             river_masks: Optional river mask array.
             soil_types: Optional soil classification array.
         """
-        # 1. Load DEM
-        self.elevation, self.meta = load_dem(dem_path)
-        self.rows, self.cols = self.elevation.shape
-        self.transform = self.meta["transform"]
-
         # Initialize optional arrays if not provided
         lc = land_cover_types if land_cover_types is not None else np.full(self.elevation.shape, "concrete", dtype=object)
         n = roughness_coefficients if roughness_coefficients is not None else np.full(self.elevation.shape, settings.default_cn, dtype=np.float32)

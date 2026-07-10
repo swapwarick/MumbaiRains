@@ -1,0 +1,8 @@
+{
+  "intensity_mm_hr": 50.0,
+  "duration_hours": 4.0,
+  "mean_sea_level_m": 0.0,
+  "tidal_range_m": 4.5,
+  "storm_surge_m": 0.0,
+  "drainage_clogging_factor": 0.8
+}
