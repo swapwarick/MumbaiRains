@@ -43,7 +43,7 @@ def compute_slope_aspect(
 
     # Horn's partial derivatives (vectorized)
     dz_dx = ((z3 + 2 * z6 + z9) - (z1 + 2 * z4 + z7)) / (8.0 * cell_size)
-    dz_dy = ((z7 + 2 * z8 + z9) - (z1 + 2 * z2 + z3)) / (8.0 * cell_size)
+    dz_dy = ((z1 + 2 * z2 + z3) - (z7 + 2 * z8 + z9)) / (8.0 * cell_size)
 
     rise_run = np.sqrt(dz_dx ** 2 + dz_dy ** 2)
     slope = np.degrees(np.arctan(rise_run)).astype(np.float32)
@@ -72,7 +72,7 @@ def compute_slope_percent(elevation: np.ndarray, cell_size: float = 30.0) -> np.
     z7 = pad[2:,  :-2];  z8 = pad[2:,  1:-1]; z9 = pad[2:,  2:]
 
     dz_dx = ((z3 + 2 * z6 + z9) - (z1 + 2 * z4 + z7)) / (8.0 * cell_size)
-    dz_dy = ((z7 + 2 * z8 + z9) - (z1 + 2 * z2 + z3)) / (8.0 * cell_size)
+    dz_dy = ((z1 + 2 * z2 + z3) - (z7 + 2 * z8 + z9)) / (8.0 * cell_size)
 
     rise_run = np.sqrt(dz_dx ** 2 + dz_dy ** 2)
     return (rise_run * 100.0).astype(np.float32)

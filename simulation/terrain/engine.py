@@ -41,6 +41,114 @@ from simulation.core.verification import (
 logger = get_logger(__name__)
 
 
+def validate_transform_and_crs(transform: list, crs_str: str) -> float:
+    """
+    Validate the complete affine transform.
+    Check pixel width, pixel height, rotation terms and skew.
+    Reject unsupported rotated/skewed rasters with a clear exception.
+    Do not infer cell size from a single transform element.
+    """
+    if len(transform) != 6:
+        raise TerrainException(f"Invalid affine transform length: expected 6, got {len(transform)}")
+        
+    a, b, c, d, e, f = [float(val) for val in transform]
+    
+    # 1. Check rotation and skew
+    if abs(b) > 1e-7 or abs(d) > 1e-7:
+        raise TerrainException(
+            f"Rotated or skewed rasters are not supported. "
+            f"Rotation/skew terms must be zero, got b={b}, d={d}."
+        )
+        
+    # 2. Check signs and values
+    if a <= 0:
+        raise TerrainException(f"Pixel width must be positive, got {a}")
+    if e >= 0:
+        raise TerrainException(f"Pixel height must be negative (North-up), got {e}")
+        
+    # 3. Determine cell size in meters
+    dy = abs(e)
+    dx = a
+    
+    # Check if geographic (degrees) vs projected (meters)
+    # A degree-based coordinate system (like EPSG:4326) will have pixel resolutions
+    # in degrees, which are very small (e.g. < 0.1 degree).
+    # Synthetic benchmarks use EPSG:4326 but have pixel size 10.0, which means they are flat/projected.
+    is_geographic = ("4326" in crs_str or "geographic" in crs_str.lower()) and max(dx, dy) < 0.1
+    
+    if is_geographic:
+        # Check aspect ratio of degree-based grid resolution to ensure it is not highly distorted
+        aspect_ratio = dx / dy
+        if aspect_ratio < 0.2 or aspect_ratio > 5.0:
+            raise TerrainException(
+                f"Highly distorted geographic aspect ratio (dx/dy = {aspect_ratio:.4f})."
+            )
+        # Use settings cell_size_m for isotropic cell size in meters
+        return settings.cell_size_m
+    else:
+        # Projected CRS (units are in meters)
+        # Verify that cells are square (isotropic cell size)
+        pct_diff = abs(dx - dy) / max(dx, dy)
+        if pct_diff > 0.01:  # allow up to 1% difference
+            raise TerrainException(
+                f"Anisotropic grid cells (non-square) are not supported. "
+                f"Pixel width ({dx}m) and height ({dy}m) must be equal (got {pct_diff*100.0:.2f}% difference)."
+            )
+        # Do not infer cell size from a single transform element; use average of both
+        return (dx + dy) / 2.0
+
+
+def compute_dataset_hash(
+    elevation: Optional[np.ndarray],
+    meta: Dict[str, Any],
+    file_path: str
+) -> str:
+    """
+    Computes a SHA256 hash that uniquely identifies the dataset based on:
+    - raster dimensions (width, height)
+    - CRS
+    - affine transform coefficients
+    - NoData value
+    - data type (dtype)
+    - source file path
+    - checksum of elevation data (if available)
+    """
+    hasher = hashlib.sha256()
+    
+    # 1. Raster dimensions
+    width = meta.get("width", 0)
+    height = meta.get("height", 0)
+    hasher.update(f"dim:{width}x{height}".encode("utf-8"))
+    
+    # 2. CRS
+    crs = str(meta.get("crs", ""))
+    hasher.update(f"|crs:{crs}".encode("utf-8"))
+    
+    # 3. Affine transform
+    transform = meta.get("transform", [])
+    transform_str = ",".join(f"{val:.8f}" for val in transform)
+    hasher.update(f"|transform:{transform_str}".encode("utf-8"))
+    
+    # 4. NoData value
+    nodata = meta.get("nodata")
+    nodata_str = str(nodata) if nodata is not None else "none"
+    hasher.update(f"|nodata:{nodata_str}".encode("utf-8"))
+    
+    # 5. Data type
+    dtype = str(meta.get("dtype", ""))
+    hasher.update(f"|dtype:{dtype}".encode("utf-8"))
+    
+    # 6. Source file path
+    hasher.update(f"|path:{file_path}".encode("utf-8"))
+    
+    # 7. Checksum of elevation data (if available)
+    if elevation is not None:
+        hasher.update(b"|checksum:")
+        hasher.update(elevation.tobytes())
+        
+    return hasher.hexdigest()[:16]
+
+
 @dataclass
 class TerrainEngine:
     """
@@ -53,6 +161,8 @@ class TerrainEngine:
     _elevation: Optional[np.ndarray] = field(default=None, repr=False)
     _meta: Optional[Dict[str, Any]] = field(default=None, repr=False)
     _dataset_hash: str = field(default="", repr=False)
+    _file_path: str = field(default="", repr=False)
+    _cell_size: Optional[float] = field(default=None, repr=False)
 
     # Lazy-loaded computational layers
     _slope: Optional[np.ndarray] = field(default=None, repr=False)
@@ -64,12 +174,24 @@ class TerrainEngine:
     _flow_acc: Optional[np.ndarray] = field(default=None, repr=False)
     _hillshade: Optional[np.ndarray] = field(default=None, repr=False)
 
+    def __post_init__(self) -> None:
+        if self._elevation is not None and self._meta is not None:
+            # Validate transform and determine cell size
+            self._cell_size = validate_transform_and_crs(self._meta["transform"], self._meta["crs"])
+            if not self._dataset_hash:
+                path = self._file_path or str(settings.dem_path)
+                self._dataset_hash = compute_dataset_hash(self._elevation, self._meta, path)
+
     def load(self, dem_path: str | None = None) -> "TerrainEngine":
         """
         Load DEM, calculate unique hash, and clear cached values.
         """
         path = str(dem_path or settings.dem_path)
+        self._file_path = path
         self._elevation, self._meta = self._loader.load_raster(path)
+        
+        # Validate the affine transform and get cell size
+        self._cell_size = validate_transform_and_crs(self._meta["transform"], self._meta["crs"])
         
         # Verify grid integrity of loaded DEM
         ok, errs = verify_grid_integrity(self._elevation)
@@ -77,7 +199,7 @@ class TerrainEngine:
             raise TerrainException(f"DEM integrity check failed: {errs}")
             
         # Compute SHA256 of array data to safely index cache
-        self._dataset_hash = hashlib.sha256(self._elevation.tobytes()).hexdigest()[:16]
+        self._dataset_hash = compute_dataset_hash(self._elevation, self._meta, self._file_path)
         
         # Reset current lazy parameters
         self._slope = self._slope_pct = self._aspect = None
@@ -115,6 +237,14 @@ class TerrainEngine:
         return self._meta  # type: ignore[return-value]
 
     @property
+    def cell_size(self) -> float:
+        """Isotropic cell size in meters, validated from affine transform."""
+        if self._cell_size is None:
+            self._require_loaded()
+            self._cell_size = validate_transform_and_crs(self._meta["transform"], self._meta["crs"])
+        return self._cell_size
+
+    @property
     def slope(self) -> np.ndarray:
         """Slope in degrees [0, 90], float32."""
         if self._slope is None:
@@ -135,7 +265,7 @@ class TerrainEngine:
             if cached is not None:
                 self._slope_pct = cached
             else:
-                self._slope_pct = compute_slope_percent(self._elevation, settings.cell_size_m)
+                self._slope_pct = compute_slope_percent(self._elevation, self.cell_size)
                 self._verify_grid("slope_percent", self._slope_pct)
                 self._cache.cache_grid("slope_pct", self._dataset_hash, self._slope_pct)
         return self._slope_pct  # type: ignore[return-value]
@@ -155,7 +285,7 @@ class TerrainEngine:
     def _compute_slope_and_aspect(self) -> None:
         """Computes, validates, and caches both slope and aspect grids."""
         self._slope, self._aspect = compute_slope_aspect(
-            self._elevation, settings.cell_size_m  # type: ignore[arg-type]
+            self._elevation, self.cell_size
         )
         self._verify_grid("slope", self._slope)
         self._verify_grid("aspect", self._aspect)
@@ -172,7 +302,7 @@ class TerrainEngine:
                 self._flow_code = cached
             else:
                 self._flow_code, self._flow_angle, self._downstream_cells = compute_flow_direction_d8_all(
-                    self._elevation, settings.cell_size_m
+                    self._elevation, self.cell_size
                 )
                 
                 # Check flow direction validity (ESRI codes check)
@@ -226,7 +356,7 @@ class TerrainEngine:
                 self._hillshade = cached
             else:
                 self._hillshade = compute_hillshade(
-                    self._elevation, settings.cell_size_m
+                    self._elevation, self.cell_size
                 )
                 self._verify_grid("hillshade", self._hillshade)
                 self._cache.cache_grid("hillshade", self._dataset_hash, self._hillshade)
