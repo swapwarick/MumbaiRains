@@ -1,0 +1,9 @@
+{
+  "max_depth_m": 0.9512514472007751,
+  "mean_depth_m": 0.10721762478351593,
+  "flooded_cells": 22187,
+  "flooded_pct": 55.4675,
+  "peak_velocity_m_s": 0.001925643882714212,
+  "mean_velocity_m_s": 0.0003278219373896718,
+  "flow_accumulation_max_cells": 1008
+}

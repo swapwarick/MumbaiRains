@@ -1,0 +1,9 @@
+{
+  "timestep": 8,
+  "initial_water": 3091.7268018722534,
+  "boundary_inflow": 399.99993896484375,
+  "boundary_outflow": 10.008000373840332,
+  "current_storage": 2701.73486328125,
+  "absolute_error": 0.0,
+  "relative_error": 0.0
+}

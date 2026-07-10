@@ -1,0 +1,51 @@
+{
+  "flat_plane": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "single_slope": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "bowl": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "ridge": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "blocked_drain": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "river_valley": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  },
+  "urban_block": {
+    "status": "PASS",
+    "message": "Passed validation matches golden references.",
+    "max_depth_m": 0.708919882774353,
+    "flooded_area_pct": 40.497499999999995,
+    "absolute_mass_error": 0.0
+  }
+}

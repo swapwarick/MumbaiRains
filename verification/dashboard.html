@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mumbai Flood Digital Twin — Validation Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-color: #f1f5f9;
+            --accent-color: #38bdf8;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+        h1 {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+        .sys-info {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media(min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .kurla-card {
+            grid-column: 1 / -1;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-header h3, .card-header h2 {
+            margin: 0;
+            font-weight: 700;
+        }
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .metric .label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .metric .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+        .msg {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 0.25rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        .tab-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function switchTab(btn, contentId) {
+            // Deactivate all buttons in this tab row
+            let tabGroup = btn.parentElement;
+            let btns = tabGroup.getElementsByClassName('tab-btn');
+            for(let b of btns) {
+                b.classList.remove('active');
+            }
+            btn.classList.add('active');
+            
+            // Hide all content tabs in this card
+            let card = tabGroup.parentElement;
+            let contents = card.getElementsByClassName('tab-content');
+            for(let c of contents) {
+                c.classList.add('hidden');
+            }
+            document.getElementById(contentId).classList.remove('hidden');
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mumbai Flood Digital Twin — Scientific Validation Dashboard</h1>
+            <div class="sys-info">
+                Executed: 2026-07-10 20:07:41 | OS: Windows-11-10.0.26200-SP0 | Python: 3.14.3
+            </div>
+        </header>
+        <div class="grid">
+            
+        <div class="card kurla-card">
+            <div class="card-header">
+                <h2>Validation Case Study: Kurla/BKC Area</h2>
+                <span class="badge" style="background-color: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid #3b82f6;">VALIDATED</span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Flood Depth</span>
+                    <span class="value">0.9513 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mean Flood Depth</span>
+                    <span class="value">0.1072 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">55.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Peak Flow Velocity</span>
+                    <span class="value">0.002 m/s</span>
+                </div>
+            </div>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-kurla')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-kurla')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-kurla')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-kurla')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-kurla')">Drain Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-kurla">
+                    <img src="plots/kurla/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-kurla">
+                    <img src="plots/kurla/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-kurla">
+                    <img src="plots/kurla/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-kurla">
+                    <img src="plots/kurla/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-kurla">
+                    <img src="plots/kurla/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+            
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Flat Plane</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-flat_plane')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-flat_plane')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-flat_plane')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-flat_plane')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-flat_plane')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-flat_plane')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-flat_plane">
+                    <img src="plots/flat_plane/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-flat_plane">
+                    <img src="plots/flat_plane/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-flat_plane">
+                    <img src="plots/flat_plane/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-flat_plane">
+                    <img src="plots/flat_plane/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-flat_plane">
+                    <img src="plots/flat_plane/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-flat_plane">
+                    <img src="plots/flat_plane/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Single Slope</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-single_slope')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-single_slope')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-single_slope')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-single_slope')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-single_slope')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-single_slope')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-single_slope">
+                    <img src="plots/single_slope/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-single_slope">
+                    <img src="plots/single_slope/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-single_slope">
+                    <img src="plots/single_slope/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-single_slope">
+                    <img src="plots/single_slope/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-single_slope">
+                    <img src="plots/single_slope/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-single_slope">
+                    <img src="plots/single_slope/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Bowl</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-bowl')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-bowl')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-bowl')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-bowl')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-bowl')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-bowl')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-bowl">
+                    <img src="plots/bowl/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-bowl">
+                    <img src="plots/bowl/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-bowl">
+                    <img src="plots/bowl/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-bowl">
+                    <img src="plots/bowl/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-bowl">
+                    <img src="plots/bowl/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-bowl">
+                    <img src="plots/bowl/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Ridge</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-ridge')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-ridge')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-ridge')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-ridge')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-ridge')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-ridge')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-ridge">
+                    <img src="plots/ridge/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-ridge">
+                    <img src="plots/ridge/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-ridge">
+                    <img src="plots/ridge/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-ridge">
+                    <img src="plots/ridge/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-ridge">
+                    <img src="plots/ridge/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-ridge">
+                    <img src="plots/ridge/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Blocked Drain</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-blocked_drain')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-blocked_drain')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-blocked_drain')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-blocked_drain')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-blocked_drain')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-blocked_drain')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-blocked_drain">
+                    <img src="plots/blocked_drain/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-blocked_drain">
+                    <img src="plots/blocked_drain/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-blocked_drain">
+                    <img src="plots/blocked_drain/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-blocked_drain">
+                    <img src="plots/blocked_drain/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-blocked_drain">
+                    <img src="plots/blocked_drain/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-blocked_drain">
+                    <img src="plots/blocked_drain/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: River Valley</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-river_valley')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-river_valley')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-river_valley')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-river_valley')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-river_valley')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-river_valley')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-river_valley">
+                    <img src="plots/river_valley/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-river_valley">
+                    <img src="plots/river_valley/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-river_valley">
+                    <img src="plots/river_valley/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-river_valley">
+                    <img src="plots/river_valley/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-river_valley">
+                    <img src="plots/river_valley/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-river_valley">
+                    <img src="plots/river_valley/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Benchmark: Urban Block</h3>
+                <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981;">
+                    GOLDEN
+                </span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <span class="label">Max Depth</span>
+                    <span class="value">0.7089 m</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Flooded Area</span>
+                    <span class="value">40.5%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Mass Error</span>
+                    <span class="value">0.000e+00 m³</span>
+                </div>
+            </div>
+            <p class="msg">Golden references generated successfully.</p>
+            <div class="chart-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(this, 'hydrograph-urban_block')">Hydrograph</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'histogram-urban_block')">Depth Hist</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'mass-urban_block')">Mass Balance</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'flooded-urban_block')">Flooded Area</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'drain-urban_block')">Drain Util</button>
+                    <button class="tab-btn" onclick="switchTab(this, 'outfall-urban_block')">Outfall Util</button>
+                </div>
+                <div class="tab-content" id="hydrograph-urban_block">
+                    <img src="plots/urban_block/hydrograph.png" alt="Hydrograph plot" />
+                </div>
+                <div class="tab-content hidden" id="histogram-urban_block">
+                    <img src="plots/urban_block/water_depth_histogram.png" alt="Depth histogram plot" />
+                </div>
+                <div class="tab-content hidden" id="mass-urban_block">
+                    <img src="plots/urban_block/mass_balance.png" alt="Mass balance plot" />
+                </div>
+                <div class="tab-content hidden" id="flooded-urban_block">
+                    <img src="plots/urban_block/flooded_area_vs_time.png" alt="Flooded area vs time plot" />
+                </div>
+                <div class="tab-content hidden" id="drain-urban_block">
+                    <img src="plots/urban_block/drain_utilization.png" alt="Drain utilization plot" />
+                </div>
+                <div class="tab-content hidden" id="outfall-urban_block">
+                    <img src="plots/urban_block/outfall_utilization.png" alt="Outfall utilization plot" />
+                </div>
+            </div>
+        </div>
+        
+        </div>
+    </div>
+</body>
+</html>
