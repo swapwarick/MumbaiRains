@@ -172,36 +172,54 @@ export default function MapDashboard() {
         }
       });
 
-      // Add Dynamic Water Depth layer — transparent for shallow, vivid for deep flood
+      // Add Dynamic Water Depth layer — 5-class flood hazard classification
+      // Class thresholds:
+      //   0 – 0.05 m  → transparent (no hazard)
+      //   0.05 – 0.5 m → sky blue   (minor flooding)
+      //   0.5 – 1.5 m  → amber      (moderate — road impassable)
+      //   1.5 – 3.0 m  → orange     (severe — structural risk)
+      //   > 3.0 m      → crimson    (extreme — life-threatening)
       map.current.addLayer({
         id: 'water-layer',
         type: 'fill',
         source: 'terrain-grid',
         paint: {
-          // Color: invisible → light blue → deep navy
           'fill-color': [
             'interpolate', ['linear'],
             ['number', ['feature-state', 'water_depth'], 0],
+            // Class 0: transparent (< 5 cm, no hazard)
             0,    'rgba(0, 0, 0, 0)',
-            0.01, 'rgba(125, 211, 252, 0.15)',  // barely visible (< 1cm)
-            0.05, 'rgba(56, 189, 248, 0.40)',   // light sky blue (~5cm)
-            0.15, 'rgba(14, 165, 233, 0.65)',   // sky-500 (~15cm)
-            0.40, 'rgba(2, 132, 199, 0.80)',    // sky-600 (~40cm)
-            1.00, 'rgba(3, 105, 161, 0.90)',    // sky-700 (1m)
-            2.50, 'rgba(30, 58, 138, 0.95)'     // blue-900 (>2.5m extreme)
+            0.02, 'rgba(0, 0, 0, 0)',
+            // Class 1: sky blue (5 cm – 50 cm, minor flooding)
+            0.05, 'rgba(56, 189, 248, 0.50)',
+            0.25, 'rgba(14, 165, 233, 0.70)',
+            0.50, 'rgba(2, 132, 199, 0.80)',
+            // Class 2: amber / yellow (50 cm – 1.5 m, moderate)
+            0.51, 'rgba(251, 191, 36, 0.82)',
+            1.00, 'rgba(245, 158, 11, 0.88)',
+            1.50, 'rgba(217, 119, 6, 0.90)',
+            // Class 3: orange (1.5 m – 3 m, severe)
+            1.51, 'rgba(249, 115, 22, 0.92)',
+            2.25, 'rgba(234, 88, 12, 0.94)',
+            3.00, 'rgba(194, 65, 12, 0.95)',
+            // Class 4: crimson (> 3 m, extreme life-threatening)
+            3.01, 'rgba(220, 38, 38, 0.96)',
+            5.00, 'rgba(153, 27, 27, 0.98)'
           ],
-          // Opacity: make shallow cells barely-there so street labels still show
           'fill-opacity': [
             'interpolate', ['linear'],
             ['number', ['feature-state', 'water_depth'], 0],
             0,    0,
-            0.01, 0.15,
+            0.02, 0,
             0.05, 0.55,
-            0.20, 0.80,
-            1.00, 0.92
+            0.50, 0.82,
+            1.50, 0.92,
+            3.00, 0.96,
+            5.00, 0.98
           ]
         }
       });
+
 
       // 2. Add vector layers
       // Roads

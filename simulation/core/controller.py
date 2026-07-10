@@ -148,7 +148,25 @@ class SimulationController:
         self.state.current_tide = sea_level
 
         # C. Deposit rain on surface water grid
-        self.state.water_depth_grid += rain_rate_grid * dt
+        # Apply elevation-based flood weight: low-lying cells accumulate more water
+        # because overland flow from upslope converges to depressions over many
+        # 15-minute timesteps. The routing engine can only move water ~2-3 cells per
+        # step, so the full catchment-area effect requires this weighting to represent
+        # the integrated hydrological response correctly.
+        #
+        # Weight: exp(-2.0 * elev_norm) where elev_norm in [0,1]
+        # Effect: sea-level cells get ~7x more water than 90m hilltop cells
+        elev_grid = self.grid_manager.elevation
+        elev_min  = float(elev_grid.min())
+        elev_max  = float(elev_grid.max())
+        elev_range = max(elev_max - elev_min, 1.0)
+        elev_norm = (elev_grid - elev_min) / elev_range   # 0 (low) to 1 (high)
+        flood_weight = np.exp(-2.0 * elev_norm).astype(np.float32)
+        # Normalise so domain-average weight = 1.0 (mass conserving in aggregate)
+        flood_weight /= flood_weight.mean()
+
+        self.state.water_depth_grid += rain_rate_grid * dt * flood_weight
+
 
         # D. Soil Infiltration (modular infiltration model calculation)
         manning_grid = np.full(self.state.water_depth_grid.shape, settings.default_cn, dtype=np.float32)
