@@ -1,6 +1,6 @@
-# Digital Twin Assessment — Mumbai Flood Digital Twin
+# Platform Assessment — Urban Hydrodynamic Simulation Platform (UHSP)
 
-This assessment evaluates the scientific validity, architectural soundness, and operational readiness of the Mumbai Flood Digital Twin platform.
+This assessment evaluates the scientific validity, architectural soundness, and operational readiness of the Urban Hydrodynamic Simulation Platform (UHSP).
 
 ---
 

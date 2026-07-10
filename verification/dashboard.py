@@ -167,7 +167,7 @@ def compile_dashboard() -> None:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mumbai Flood Digital Twin — Validation Dashboard</title>
+    <title>Urban Hydrodynamic Simulation Platform (UHSP) — Validation Dashboard</title>
     <style>
         :root {{
             --bg-color: #0f172a;
@@ -325,7 +325,7 @@ def compile_dashboard() -> None:
 <body>
     <div class="container">
         <header>
-            <h1>Mumbai Flood Digital Twin — Scientific Validation Dashboard</h1>
+            <h1>Urban Hydrodynamic Simulation Platform (UHSP) — Scientific Validation Dashboard</h1>
             <div class="sys-info">
                 Executed: {sys_profile['timestamp']} | OS: {sys_profile['os']} | Python: {sys_profile['python_ver']}
             </div>

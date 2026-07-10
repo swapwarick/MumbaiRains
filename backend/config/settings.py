@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     # Application
     # ------------------------------------------------------------------ #
-    app_title: str = "Mumbai Flood Digital Twin API"
+    app_title: str = "Urban Hydrodynamic Simulation Platform (UHSP) API"
     app_version: str = "2.0.0"
     app_phase: str = "Phase 2 - Hydrological Simulation Engine"
     log_level: str = "INFO"

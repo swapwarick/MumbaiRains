@@ -1,4 +1,4 @@
-# Uncertainty Register — Mumbai Flood Digital Twin
+# Uncertainty Register — Urban Hydrodynamic Simulation Platform (UHSP)
 
 This register documents the known assumptions, numerical limitations, missing physics, and expected error sources in the Version 1.0 Beta simulator.
 

@@ -116,7 +116,7 @@ def create_app() -> FastAPI:
                 return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
         return {
             "status": "running",
-            "project": "Mumbai Flood Digital Twin",
+            "project": "Urban Hydrodynamic Simulation Platform (UHSP)",
             "phase": settings.app_phase,
             "version": settings.app_version,
         }
