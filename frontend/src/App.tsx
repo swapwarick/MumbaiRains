@@ -1,12 +1,8 @@
-import MapDashboard from './components/MapDashboard';
+import { DigitalTwinWorkstation } from './components/workstation/DigitalTwinWorkstation';
 import './App.css';
 
 function App() {
-  return (
-    <div className="app-container">
-      <MapDashboard />
-    </div>
-  );
+  return <DigitalTwinWorkstation />;
 }
 
 export default App;
